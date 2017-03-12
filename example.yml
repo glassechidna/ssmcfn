@@ -1,0 +1,12 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  SecureParam:
+    Type: Custom::CfnParamStore
+    Properties:
+      ServiceToken: !ImportValue CfnParamStore
+      Type: SecureString
+      Value: moomoo
+Outputs:
+  ParamArn:
+    Description: Arn of param in SSM param store
+    Value: !GetAtt SecureParam.Arn
