@@ -27,12 +27,13 @@ Resources:
               var paramArn = "arn:aws:ssm:" + region + ":" + accountId + ":parameter/" + paramName;
 
               var cb = function(err, resp) {
+                  var cfnRespData = { Arn: paramArn, Name: paramName };
                   if (err) {
                       console.log(err);
-                      response.send(event, context, response.FAILED, { Arn: paramArn }, paramArn);            
+                      response.send(event, context, response.FAILED, cfnRespData, paramArn);            
                   } else {
                       console.log(resp);
-                      response.send(event, context, response.SUCCESS, { Arn: paramArn }, paramArn);            
+                      response.send(event, context, response.SUCCESS, cfnRespData, paramArn);            
                   }
               };
 
