@@ -42,6 +42,7 @@ Resources:
                       Name: paramName,
                       Type: props.Type,
                       Value: props.Value,
+                      KeyId: props.KeyId,
                       Overwrite: false
                   };
 
@@ -54,6 +55,7 @@ Resources:
                       Name: paramName,
                       Type: props.Type,
                       Value: props.Value,
+                      KeyId: props.KeyId,
                       Overwrite: true
                   };
 
@@ -93,6 +95,7 @@ Resources:
                 Action:
                   - ssm:PutParameter
                   - ssm:DeleteParameter
+                  - kms:Encrypt
                 Resource: "*"
 Outputs:
   Lambda:
