@@ -1,12 +1,42 @@
 AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  BuildNumber:
+    Description: The S3 bucket where the beanstalk application is stored
+    Type: Number
 Resources:
   SecureParam:
     Type: Custom::CfnParamStore
     Properties:
-      ServiceToken: !ImportValue CfnParamStore
+      ServiceToken: !ImportValue CfnParamStoreCreate
+      KeyName: somevalue
       Type: SecureString
-      Value: moomoo
+      KeyValue: this-is-the-new-password
+
+  GetParam:
+    Type: Custom::CfnParamStoreGet
+    Properties:
+      ServiceToken: !ImportValue CfnParamStoreGet
+      KeyName: somevalue
+      BuildNumber: !Ref BuildNumber
+
+  GetParam2:
+    Type: Custom::CfnParamStoreGet
+    Properties:
+      ServiceToken: !ImportValue CfnParamStoreGet
+      KeyName: somevalue
+      BuildNumber: !Ref BuildNumber
+
+  GetParam3:
+    Type: Custom::CfnParamStoreGet
+    Properties:
+      ServiceToken: !ImportValue CfnParamStoreGet
+      KeyName: notreal
+      BuildNumber: !Ref BuildNumber
+      
 Outputs:
   ParamArn:
     Description: Arn of param in SSM param store
     Value: !GetAtt SecureParam.Arn
+  PasswordArn:
+    Description: Arn of param in SSM param store
+    Value: !GetAtt GetParam.Value

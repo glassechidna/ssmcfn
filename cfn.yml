@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Resources:
-  Lambda:
+  GetLambda:
     Type: AWS::Lambda::Function
     Properties:
       Handler: index.handler
-      Role: !GetAtt Role.Arn
+      Role: !GetAtt GetRole.Arn
       Runtime: nodejs4.3
       Timeout: 60
       Code:
@@ -14,7 +14,7 @@ Resources:
 
           exports.handler = function(event, context) {
               console.log(event);
-              
+
               var ssm = new aws.SSM();
               var props = event.ResourceProperties;
 
@@ -23,17 +23,64 @@ Resources:
               var accountId = splitStackArn[4];
 
               var stackName = splitStackArn[5].split("/")[1];
-              var paramName = props.Name || "cfn-" + stackName + "-" + event.LogicalResourceId; // TODO: add rand on end?
+              var paramName = "cfn-" + stackName + "-" + props.KeyName;
               var paramArn = "arn:aws:ssm:" + region + ":" + accountId + ":parameter/" + paramName;
 
               var cb = function(err, resp) {
-                  var cfnRespData = { Arn: paramArn, Name: paramName };
+                  if (err) {
+                      var cfnRespData = { Arn: paramArn, Value: 'Unknown: Please set ' + paramName + ' in the console' };
+                      console.log(err);
+                      response.send(event, context, response.SUCCESS, cfnRespData, paramArn);
+                  } else {
+                      var cfnRespData = { Arn: paramArn, Value: resp.Parameter.Value };
+                      response.send(event, context, response.SUCCESS, cfnRespData, paramArn);
+                  }
+              };
+
+              if (event.RequestType == "Create" || event.RequestType == "Update" ) {
+                  var params = {
+                      Name: paramName,
+                      WithDecryption: true
+                  };
+
+                  ssm.getParameter(params, cb);
+              } else if (event.RequestType == "Delete") { }
+
+          };
+  CreateLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt CreateRole.Arn
+      Runtime: nodejs4.3
+      Timeout: 60
+      Code:
+        ZipFile: >
+          var response = require('cfn-response');
+          var aws = require('aws-sdk');
+
+          exports.handler = function(event, context) {
+              console.log(event);
+
+              var ssm = new aws.SSM();
+              var props = event.ResourceProperties;
+
+              var splitStackArn = event.StackId.split(':');
+              var region = splitStackArn[3];
+              var accountId = splitStackArn[4];
+
+              var stackName = splitStackArn[5].split("/")[1];
+              var paramName = "cfn-" + stackName + "-" + props.KeyName;
+              var paramArn = "arn:aws:ssm:" + region + ":" + accountId + ":parameter/" + paramName;
+
+              var cb = function(err, resp) {
+                  var cfnRespData = { Arn: paramArn, KeyName: paramName };
                   if (err) {
                       console.log(err);
-                      response.send(event, context, response.FAILED, cfnRespData, paramArn);            
+                      response.send(event, context, response.FAILED, cfnRespData, paramArn);
                   } else {
                       console.log(resp);
-                      response.send(event, context, response.SUCCESS, cfnRespData, paramArn);            
+                      response.send(event, context, response.SUCCESS, cfnRespData, paramArn);
                   }
               };
 
@@ -41,20 +88,20 @@ Resources:
                   var params = {
                       Name: paramName,
                       Type: props.Type,
-                      Value: props.Value,
+                      Value: props.KeyValue,
                       KeyId: props.KeyId,
                       Overwrite: false
                   };
 
                   if (props.Description) params.Description = props.Description;
                   if (props.KeyId) params.KeyId = props.KeyId;
-                  
+
                   ssm.putParameter(params, cb);
               } else if (event.RequestType == "Update") {
                   var params = {
                       Name: paramName,
                       Type: props.Type,
-                      Value: props.Value,
+                      Value: props.KeyValue,
                       KeyId: props.KeyId,
                       Overwrite: true
                   };
@@ -67,7 +114,7 @@ Resources:
                   ssm.deleteParameter({ Name: paramName }, cb);
               }
           };
-  Role:
+  CreateRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -97,9 +144,48 @@ Resources:
                   - ssm:DeleteParameter
                   - kms:Encrypt
                 Resource: "*"
+
+  GetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameter
+                  - ssm:DeleteParameter
+                  - kms:Decrypt
+                Resource: "*"
+
+
 Outputs:
-  Lambda:
+  CreateLambda:
     Description: Cfn polyfill for SSM parameter store
-    Value: !GetAtt Lambda.Arn
+    Value: !GetAtt CreateLambda.Arn
     Export:
-      Name: CfnParamStore
+      Name: CfnParamStoreCreate
+
+  GetLambda:
+    Description: Cfn polyfill for SSM parameter store
+    Value: !GetAtt GetLambda.Arn
+    Export:
+      Name: CfnParamStoreGet
