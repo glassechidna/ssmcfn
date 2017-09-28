@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Parameters:
   BuildNumber:
-    Description: The S3 bucket where the beanstalk application is stored
+    Description: A random unique number to trigger the Get event
     Type: Number
 Resources:
   SecureParam:
