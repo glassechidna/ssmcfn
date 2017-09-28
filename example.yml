@@ -38,5 +38,11 @@ Outputs:
     Description: Arn of param in SSM param store
     Value: !GetAtt SecureParam.Arn
   PasswordArn:
-    Description: Arn of param in SSM param store
+    Description: Arn of param in SSM param store first parm
     Value: !GetAtt GetParam.Value
+  Password2Arn:
+    Description: Arn of param in SSM param store second parm
+    Value: !GetAtt GetParam2.Value
+  Password3Arn:
+    Description: Arn of param in SSM param store third parm
+    Value: !GetAtt GetParam3.Value
