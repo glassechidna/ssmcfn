@@ -1,0 +1,5 @@
+steps:
+- command: 'make validate'
+  name: ':hammer: Validate template'
+
+- wait
