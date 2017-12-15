@@ -39,3 +39,5 @@ The above makes some extra changes to the original code.
 [https://github.com/glassechidna/ssmcfn]: https://github.com/glassechidna/ssmcfn
 [aws-pstore]: https://aws.amazon.com/ec2/systems-manager/parameter-store/
 [cfn-res]: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources-lambda.html
+
+
