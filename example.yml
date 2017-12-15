@@ -1,12 +1,48 @@
 AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  BuildNumber:
+    Description: A random unique number to trigger the Get event
+    Type: Number
 Resources:
   SecureParam:
     Type: Custom::CfnParamStore
     Properties:
-      ServiceToken: !ImportValue CfnParamStore
+      ServiceToken: !ImportValue CfnParamStoreCreate
+      KeyName: somevalue
       Type: SecureString
-      Value: moomoo
+      KeyValue: this-is-the-new-password
+
+  GetParam:
+    Type: Custom::CfnParamStoreGet
+    Properties:
+      ServiceToken: !ImportValue CfnParamStoreGet
+      KeyName: somevalue
+      BuildNumber: !Ref BuildNumber
+
+  GetParam2:
+    Type: Custom::CfnParamStoreGet
+    Properties:
+      ServiceToken: !ImportValue CfnParamStoreGet
+      KeyName: somevalue
+      BuildNumber: !Ref BuildNumber
+
+  GetParam3:
+    Type: Custom::CfnParamStoreGet
+    Properties:
+      ServiceToken: !ImportValue CfnParamStoreGet
+      KeyName: notreal
+      BuildNumber: !Ref BuildNumber
+      
 Outputs:
   ParamArn:
     Description: Arn of param in SSM param store
     Value: !GetAtt SecureParam.Arn
+  PasswordArn:
+    Description: Arn of param in SSM param store first parm
+    Value: !GetAtt GetParam.Value
+  Password2Arn:
+    Description: Arn of param in SSM param store second parm
+    Value: !GetAtt GetParam2.Value
+  Password3Arn:
+    Description: Arn of param in SSM param store third parm
+    Value: !GetAtt GetParam3.Value

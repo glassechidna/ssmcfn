@@ -1,0 +1,76 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Resources:
+  CleanUp:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: index.handler
+      Role: !GetAtt CleanupRole.Arn
+      Runtime: nodejs4.3
+      Timeout: 60
+      Code:
+        ZipFile: >
+
+          var aws = require('aws-sdk');
+
+          exports.handler = function(event, context) {
+
+              var ssm = new aws.SSM();
+              var props = event.ResourceProperties;
+
+              var splitStackArn = event.StackId.split(':');
+              var region = splitStackArn[3];
+              var accountId = splitStackArn[4];
+
+              var stackName = splitStackArn[5].split("/")[1];
+              var paramName = "cfn-" + stackName + "-" + props.KeyName;
+              var paramArn = "arn:aws:ssm:" + region + ":" + accountId + ":parameter/" + paramName;
+
+              var cb = function(err, resp) {
+                  if (err) {
+                      var cfnRespData = { Arn: paramArn, Value: 'Unknown: Please set ' + paramName + ' in the console' };
+                      console.log(err);
+                  } else {
+                      var cfnRespData = { Arn: paramArn, Value: resp.Parameter.Value };
+                  }
+              };
+
+              if (event.RequestType == "Create" || event.RequestType == "Update" ) {
+                  var params = {
+                      Name: paramName,
+                      WithDecryption: true
+                  };
+
+                  ssm.getParameter(params, cb);
+              } else if (event.RequestType == "Delete") { }
+
+          };
+
+  CleanupRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns: arn:aws:iam::aws:policy/PowerUserAccess
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                Resource: "*"

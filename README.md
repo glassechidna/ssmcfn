@@ -1,6 +1,8 @@
 # SSM Parameter Store helper for CloudFormation templates
 
-You know what's lame? CloudFormation not (yet) having support for storing values 
+(Extending https://github.com/glassechidna/ssmcfn)
+
+You know what's lame? CloudFormation not (yet) having support for storing values
 in [Parameter Store][aws-pstore]. You know what's less lame? [Lambda-backed custom resources][cfn-res]
 so that we can polyfill this ourselves. Simply deploy [`cfn.yml`](cfn.yml) into
 your AWS region and use like this:
@@ -8,26 +10,34 @@ your AWS region and use like this:
 ```yaml
 AWSTemplateFormatVersion: "2010-09-09"
 Parameters:
-  SecretValue:
-    Description: Sssh, it's a secret
-    Type: String
-    NoEcho: true
+  BuildNumber:
+    Description: A unique number to ensure that the GetParam is run
+    Type: Number
 Resources:
   SecureParam:
     Type: Custom::CfnParamStore
     Properties:
-      ServiceToken: !ImportValue CfnParamStore
+      ServiceToken: !ImportValue CfnParamStoreCreate
+      KeyName: somevalue
       Type: SecureString
-      Value: !Ref SecretValue
-Outputs:
-  ParamArn:
-    Description: Arn of param in SSM param store
-    Value: !GetAtt SecureParam.Arn
+      KeyValue: this-is-the-new-password
+
+  GetParam:
+    Type: Custom::CfnParamStoreGet
+    Properties:
+      ServiceToken: !ImportValue CfnParamStoreGet
+      KeyName: somevalue
+      BuildNumber: !Ref BuildNumber
 ```
 
-Note that neither CloudFormation, Lambda nor Parameter Store are global resources,
-so you will have to deploy the helper stack into each region
-that you wish to use this in.
+The above makes some extra changes to the original code.
 
+* It now supports a GetParm event
+* The GetParm returns a phoney result (eg "Please set cfn-param-stack-notreal in the console") if one is not set
+
+
+[https://github.com/glassechidna/ssmcfn]: https://github.com/glassechidna/ssmcfn
 [aws-pstore]: https://aws.amazon.com/ec2/systems-manager/parameter-store/
 [cfn-res]: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/template-custom-resources-lambda.html
+
+
