@@ -103,3 +103,8 @@ Outputs:
     Value: !GetAtt Lambda.Arn
     Export:
       Name: CfnParamStore
+  HelperRole:
+    Description: IAM Role
+    Value: !GetAtt Role.Arn
+    Export:
+      Name: SSMHelperRole
